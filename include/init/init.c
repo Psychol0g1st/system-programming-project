@@ -4,7 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include "../helper/helper.h"
-#include "../info/info.h"
 
 #define FILE_NAME "chart"
 
@@ -28,15 +27,15 @@ Config *init(const int argc, const char *argv[])
         switch (opt)
         {
         case HELP_O:
-            help();
+            conf->help = true;
             break;
         case VERSION_O:
-            version();
+            conf->version = true;
             break;
         case SEND_O:
             if (conf->mode != DEFAULT_MODE)
             {
-                help();
+                conf->help = true;
             }
             else
             {
@@ -46,7 +45,7 @@ Config *init(const int argc, const char *argv[])
         case RECEIVE_O:
             if (conf->mode != DEFAULT_MODE)
             {
-                help();
+                conf->help = true;
             }
             else
             {
@@ -56,7 +55,7 @@ Config *init(const int argc, const char *argv[])
         case FILE_O:
             if (conf->communication != DEFAULT_COM)
             {
-                help();
+                conf->help = true;
             }
             else
             {
@@ -66,7 +65,7 @@ Config *init(const int argc, const char *argv[])
         case SOCKET_O:
             if (conf->communication != DEFAULT_COM)
             {
-                help();
+                conf->help = true;
             }
             else
             {
@@ -74,7 +73,7 @@ Config *init(const int argc, const char *argv[])
             }
             break;
         default:
-            help();
+            conf->help = true;
             break;
         }
     }

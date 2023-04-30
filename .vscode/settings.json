@@ -2,6 +2,7 @@
     "files.associations": {
         "hello.h": "c",
         "stdio.h": "c",
-        "random": "c"
+        "random": "c",
+        "source_location": "c"
     }
 }

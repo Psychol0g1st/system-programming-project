@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void help(){
+void help()
+{
     printf("\nSystem programming project help:\n\n");
     printf("Usage: ./project [OPTIONS]\n\n");
     printf("Options:\n");
     printf("--help\tShow this help message.\n");
-    exit(0);
 }
 
 void version()
@@ -15,5 +15,4 @@ void version()
     printf("\nSystem programming project\n\n");
     printf("Version: 0.0.1\n");
     printf("Created by: Antal Svec\n");
-    exit(0);
 }
