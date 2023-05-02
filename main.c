@@ -21,7 +21,6 @@ int main(const int argc, const char *argv[])
 {
     signal(SIGINT, SignalHandler);
     signal(SIGUSR1, SignalHandler);
-    signal(SIGALRM, SignalHandler);
 
     Config *conf = init(argc, argv);
     print_config(conf);

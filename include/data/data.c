@@ -5,6 +5,7 @@
 
 int Measurement(int **Values)
 {
+    srand(time(NULL));
     time_t now = time(NULL);
     struct tm *local_time = localtime(&now);
     int seconds = local_time->tm_sec;
@@ -17,14 +18,12 @@ int Measurement(int **Values)
 
     for (int i = 1; i < num_values; i++)
     {
-        int rand_num = rand();
-        int incrementThreshold = (int)(0.428571 * RAND_MAX);
-        int decrementThreshold = (int)(0.783410 * RAND_MAX);
-        if (rand_num < incrementThreshold)
+        float rand_num = ((float)rand() / (float)(RAND_MAX));
+        if (rand_num < 0.428571)
         {
             values[i] = values[i - 1] + 1;
         }
-        else if (rand_num < decrementThreshold)
+        else if (rand_num < 0.783410)
         {
             values[i] = values[i - 1] - 1;
         }

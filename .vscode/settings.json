@@ -3,6 +3,9 @@
         "hello.h": "c",
         "stdio.h": "c",
         "random": "c",
-        "source_location": "c"
+        "source_location": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c"
     }
 }

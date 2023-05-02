@@ -12,7 +12,7 @@
 #include "../pid/pid.h"
 #include "../bmp/bmp.h"
 #define MAX_VALUES 1000
-#define BUF_SIZE 1024
+#define BUFSIZE 1024
 
 void SendViaFile(int *Values, int NumValues)
 {
@@ -92,194 +92,179 @@ void ReceiveViaFile(int sig)
 
 void SendViaSocket(int *Values, int NumValues)
 {
-    // create socket
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0)
+    int s;                     // socket ID
+    int bytes;                 // received/sent bytes
+    int flag;                  // transmission flag
+    char on;                   // sockopt option
+    char buffer[BUFSIZE];      // datagram buffer area
+    unsigned int server_size;  // length of the sockaddr_in server
+    struct sockaddr_in server; // address of server
+
+    /************************ Initialization ********************/
+    on = 1;
+    flag = 0;
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_port = htons(3333);
+    server_size = sizeof server;
+
+    /************************ Creating socket *******************/
+    s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0)
     {
-        perror("Error creating socket");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Socket creation error.\n");
+        exit(2);
     }
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
-    // set destination address and port
-    struct sockaddr_in dest_addr;
-    memset(&dest_addr, 0, sizeof(dest_addr));
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    dest_addr.sin_port = htons(3333);
 
-    // send number of values
-    int num_values = htonl(NumValues);
-    ssize_t sent = sendto(sockfd, &num_values, sizeof(num_values), 0, (const struct sockaddr *)&dest_addr, sizeof(dest_addr));
-    if (sent != sizeof(num_values))
+    /************************ Sending data **********************/
+    printf(" Message to send: %d", NumValues);
+    bytes = sendto(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&server, server_size);
+    if (bytes <= 0)
     {
-        perror("Error sending number of values");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "  Sending error.\n");
+        exit(3);
     }
+    printf(" %i bytes have been sent to server.\n", bytes);
+    signal(SIGALRM, SignalHandler);
 
-    // receive response
-    int response;
-    ssize_t received = recvfrom(sockfd, &response, sizeof(response), 0, NULL, NULL);
-    if (received != sizeof(response))
+    alarm(1);
+    int checkNumValues = 0;
+    /************************ Receive data **********************/
+    bytes = recvfrom(s, &checkNumValues, sizeof(int), flag, (struct sockaddr *)&server, &server_size);
+    if (bytes < 0)
     {
-        perror("Error receiving response");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, " Receiving error.\n");
+        exit(4);
     }
+    alarm(0);
+    printf(" Server's (%s:%d) acknowledgement:\n  %d\n",
+           inet_ntoa(server.sin_addr), ntohs(server.sin_port), checkNumValues);
+    if (checkNumValues != NumValues)
+    {
 
-    // check response
-    if (response != NumValues)
-    {
-        fprintf(stderr, "Error: number of values do not match\n");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+        printf("  The number of values are not equal.\n");
+        exit(5);
     }
+    printf(" Array size to send: %d", NumValues);
+    bytes = sendto(s, Values, sizeof(int) * NumValues, flag, (struct sockaddr *)&server, server_size);
+    if (bytes <= 0)
+    {
+        fprintf(stderr, "  Sending array error.\n");
+        exit(3);
+    }
+    printf(" %i bytes have been sent to server.\n", bytes);
 
-    // send values
-    ssize_t sent_values = sendto(sockfd, Values, NumValues * sizeof(int), 0, (const struct sockaddr *)&dest_addr, sizeof(dest_addr));
-    if (sent_values != NumValues * sizeof(int))
+    bytes = recvfrom(s, &checkNumValues, sizeof(int), flag, (struct sockaddr *)&server, &server_size);
+    if (bytes < 0)
     {
-        perror("Error sending values");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, " Receiving error.\n");
+        exit(4);
     }
+    printf("Got %d values from server\n", checkNumValues);
+    if (checkNumValues != NumValues)
+    {
 
-    // receive response with timeout
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = SIG_IGN; // ignore alarm signal
-    if (sigaction(SIGALRM, &sa, NULL) == -1)
-    {
-        perror("Error setting up alarm signal handler");
-        close(sockfd);
-        exit(EXIT_FAILURE);
+        printf("  The number of values are not equal.\n");
+        exit(5);
     }
-    alarm(1); // set 1 second alarm
-    ssize_t received_values = recvfrom(sockfd, &response, sizeof(response), 0, NULL, NULL);
-    if (received_values == -1)
-    {
-        if (errno == EINTR) // alarm signal interrupted recvfrom
-        {
-            fprintf(stderr, "Error: timed out waiting for response\n");
-        }
-        else
-        {
-            perror("Error receiving response");
-        }
-        close(sockfd);
-        exit(EXIT_FAILURE);
-    }
-
-    // check response
-    if (response != NumValues * sizeof(int))
-    {
-        fprintf(stderr, "Error: size of values do not match\n");
-        close(sockfd);
-        exit(EXIT_FAILURE);
-    }
-
-    close(sockfd);
+    /************************ Closing ***************************/
+    return EXIT_SUCCESS;
 }
 
-void ReceiveViaSocket()
+void ReceiveViaSocket(int sig)
 {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock == -1)
+    int s;                     // socket descriptor
+    int bytes;                 // received/sent bytes
+    int err;                   // error code
+    int flag;                  // transmission flag
+    char on;                   // sockopt option
+    char buffer[BUFSIZE];      // datagram buffer area
+    int NumValues;             // number of values
+    unsigned int server_size;  // length of the sockaddr_in server
+    unsigned int client_size;  // length of the sockaddr_in client
+    struct sockaddr_in server; // address of server
+    struct sockaddr_in client; // address of client
+
+    /************************ Initialization ********************/
+    on = 1;
+    flag = 0;
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons(3333);
+    server_size = sizeof server;
+    client_size = sizeof client;
+
+    /************************ Creating socket *******************/
+    s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0)
     {
-        perror("Error creating socket");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, " Socket creation error.\n");
+        exit(2);
     }
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
+    setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
 
-    struct sockaddr_in server_addr, client_addr;
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server_addr.sin_port = htons(3333);
-
-    if (bind(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
+    /************************ Binding socket ********************/
+    err = bind(s, (struct sockaddr *)&server, server_size);
+    if (err < 0)
     {
-        perror("Error binding socket");
-        close(sock);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Binding error.\n");
+        exit(3);
     }
-
-    printf("Server is listening on port %d\n", ntohs(server_addr.sin_port));
 
     while (1)
-    {
-        char buf[BUF_SIZE];
-        socklen_t client_addr_len = sizeof(client_addr);
-        memset(buf, 0, BUF_SIZE);
-
-        if (recvfrom(sock, buf, BUF_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len) == -1)
+    { // Continuous server operation
+        /************************ Receive data **********************/
+        printf("\n Waiting for a message...\n");
+        bytes = recvfrom(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&client, &client_size);
+        if (bytes < 0)
         {
-            perror("Error receiving data");
-            close(sock);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, " Receiving error.\n");
+            exit(4);
         }
+        printf(" %d bytes have been received from the client (%s:%d).\n Client's message:  %d\n",
+               bytes, inet_ntoa(client.sin_addr), ntohs(client.sin_port), NumValues);
 
-        // Handle first message containing int value
-        int num_values = *((int *)buf);
-        printf("Received num_values: %d\n", num_values);
-
-        if (sendto(sock, &num_values, sizeof(num_values), 0, (struct sockaddr *)&client_addr, client_addr_len) == -1)
+        /************************ Sending data **********************/
+        bytes = sendto(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&client, client_size);
+        if (bytes <= 0)
         {
-            perror("Error sending data");
-            close(sock);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, " Sending error.\n");
+            exit(5);
         }
-
-        // Handle second message containing data to be processed by BMPcreator
-        int data_size = num_values * sizeof(int);
+        printf(" Acknowledgement have been sent to client.\n");
+        int data_size = NumValues * sizeof(int);
         int *data = (int *)malloc(data_size);
-        memcpy(data, buf + sizeof(int), data_size);
-
-        BMPcreator(data, num_values);
-
-        if (sendto(sock, &data_size, sizeof(data_size), 0, (struct sockaddr *)&client_addr, client_addr_len) == -1)
+        printf("\n Waiting for array of data...\n");
+        bytes = recvfrom(s, data, sizeof(int) * NumValues, flag, (struct sockaddr *)&client, &client_size);
+        if (bytes < 0)
         {
-            perror("Error sending data");
-            close(sock);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, " Receiving array error.\n");
+            exit(4);
         }
+        int receivedNumValues = bytes / sizeof(int);
+        printf(" %d bytes have been received from the client (%s:%d).\n Array got size:\n  %d",
+               bytes, inet_ntoa(client.sin_addr), ntohs(client.sin_port), receivedNumValues);
 
+        /************************ Sending data **********************/
+        // sprintf(buffer, "I have received a %d bytes long message.", bytes - 1);
+        bytes = sendto(s, &receivedNumValues, sizeof(int), flag, (struct sockaddr *)&client, client_size);
+        if (bytes <= 0)
+        {
+            fprintf(stderr, " Sending error.\n");
+            exit(5);
+        }
+        if (receivedNumValues != NumValues)
+        {
+            printf("  The number of values are not equal.\n");
+            exit(5);
+        }
+        printf(" Acknowledgement about gotten array size have been sent to client.\n");
+        BMPcreator(data, NumValues);
         free(data);
-
-        // receive acknowledgement with timeout
-        signal(SIGALRM, NULL);
-        alarm(1); // set 1 second alarm
-        ssize_t received = recvfrom(sock, buf, BUF_SIZE, 0, (struct sockaddr *)&client_addr, &client_addr_len);
-        if (received == -1 && errno == EINTR)
-        {
-            fprintf(stderr, "Error: timeout occurred while waiting for acknowledgement\n");
-            continue; // continue waiting for next message
-        }
-        else if (received == -1)
-        {
-            perror("Error receiving acknowledgement");
-            close(sock);
-            exit(EXIT_FAILURE);
-        }
-        else if (received != sizeof(int))
-        {
-            fprintf(stderr, "Error: invalid acknowledgement size received\n");
-            continue; // continue waiting for next message
-        }
-
-        int ack;
-        memcpy(&ack, buf, sizeof(int));
-
-        if (ack != data_size)
-        {
-            fprintf(stderr, "Error: size of data processed do not match\n");
-            continue; // continue waiting for next message
-        }
-
-        printf("Data processed successfully. Acknowledgement sent.\n");
     }
-
-    close(sock);
 }
 
 void SignalHandler(int sig)
