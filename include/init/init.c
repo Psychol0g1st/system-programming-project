@@ -14,7 +14,7 @@ Config *init(const int argc, const char *argv[])
 
     if (strcmp(argv[0] + len1 - len2, FILE_NAME) != 0)
     {
-        error_with_exit(1, "Error! The binary file name is not 'chart'!");
+        error_with_exit(1, "Hiba! A futtatott program neve nem 'chart'!");
     }
     Config *conf = (Config *)malloc(sizeof(Config));
 

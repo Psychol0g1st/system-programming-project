@@ -5,14 +5,15 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <unistd.h>
+#include "../helper/helper.h"
 
 int FindPID()
 {
+    printf("PID keresese...\n");
     DIR *proc_dir = opendir("/proc");
     if (proc_dir == NULL)
     {
-        perror("Cannot open /proc directory");
-        return -1;
+        error_with_exit(10, "Hiba! Nem sikerult megnyitni a /proc konyvtarat!\n");
     }
 
     struct dirent *entry;
@@ -28,7 +29,6 @@ int FindPID()
             FILE *status_file = fopen(path, "r");
             if (status_file == NULL)
             {
-                perror(path);
                 continue;
             }
 
@@ -42,11 +42,8 @@ int FindPID()
             {
                 while (fgets(line, sizeof(line), status_file) != NULL)
                 {
-                    printf("%s\n", line);
                     if (sscanf(line, "Pid:\t%d", &chart_pid) == 1)
                     {
-
-                        printf("%d\n", chart_pid);
                         if (chart_pid != pid)
                         {
                             break;

@@ -11,12 +11,13 @@
 #include <sys/socket.h>
 #include "../pid/pid.h"
 #include "../bmp/bmp.h"
+#include "../helper/helper.h"
 #define MAX_VALUES 1000
 #define BUFSIZE 1024
 
 void SendViaFile(int *Values, int NumValues)
 {
-
+    printf("Kuldes fajlba...\n");
     struct passwd *pw = getpwuid(getuid());                  // get user's information
     const char *homedir = pw->pw_dir;                        // get user's home directory
     char file_path[256];                                     // create a buffer for file path
@@ -24,25 +25,20 @@ void SendViaFile(int *Values, int NumValues)
     FILE *file = fopen(file_path, "w");                      // open file for writing
     if (file == NULL)
     {
-        perror("error creating file");
-        exit(EXIT_FAILURE);
+        error_with_exit(3, "Hiba! Nem sikerult megnyitni a Measurement.txt fajlt!\n");
     }
 
-    // write values to file
     for (int i = 0; i < NumValues; i++)
     {
         fprintf(file, "%d\n", Values[i]);
     }
 
-    // close file
     fclose(file);
 
-    // find PID and send signal
     int pid = FindPID();
     if (pid == -1)
     {
-        printf("error: no receiver process found\n");
-        // exit(EXIT_FAILURE);
+        error_with_exit(11, "Hiba! Nem talalhato a chart process!");
     }
     else
     {
@@ -50,8 +46,9 @@ void SendViaFile(int *Values, int NumValues)
     }
 }
 
-void ReceiveViaFile(int sig)
+void ReceiveViaFile()
 {
+    printf("Fogadas fajlbol...\n");
     struct passwd *pw = getpwuid(getuid());                  // get user's information
     const char *homedir = pw->pw_dir;                        // get user's home directory
     char file_path[256];                                     // create a buffer for file path
@@ -59,44 +56,30 @@ void ReceiveViaFile(int sig)
     FILE *file = fopen(file_path, "r");                      // open file for writing
     if (file == NULL)
     {
-        perror("error creating file");
-        exit(EXIT_FAILURE);
+        error_with_exit(3, "Hiba! Nem sikerult megnyitni a Measurement.txt fajlt!\n");
     }
 
-    // Memóriaterületet foglalunk a beolvasott értékeknek
     int *values = malloc(MAX_VALUES * sizeof(int));
     int num_values = 0;
-
-    // Beolvassuk a fájl tartalmát és eltároljuk az értékeket
     int value;
     while (fscanf(file, "%d", &value) == 1)
     {
         values[num_values] = value;
         num_values++;
-        if (num_values == MAX_VALUES)
-        {
-            printf("Tul sok ertek van a fajlban!\n");
-            exit(1);
-        }
     }
 
-    // Felszabadítjuk a fájl erőforrásait
     fclose(file);
-
-    // BMPcreator eljárás meghívása a beolvasott értékekkel
     BMPcreator(values, num_values);
-
-    // Felszabadítjuk a memóriaterületet
     free(values);
 }
 
 void SendViaSocket(int *Values, int NumValues)
 {
+    printf("Kuldes socketen...\n");
     int s;                     // socket ID
     int bytes;                 // received/sent bytes
     int flag;                  // transmission flag
     char on;                   // sockopt option
-    char buffer[BUFSIZE];      // datagram buffer area
     unsigned int server_size;  // length of the sockaddr_in server
     struct sockaddr_in server; // address of server
 
@@ -112,75 +95,57 @@ void SendViaSocket(int *Values, int NumValues)
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s < 0)
     {
-        fprintf(stderr, "Socket creation error.\n");
-        exit(2);
+        error_with_exit(5, "Hiba! Nem sikerult letrehozni a socketet!\n");
     }
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
 
     /************************ Sending data **********************/
-    printf(" Message to send: %d", NumValues);
     bytes = sendto(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&server, server_size);
     if (bytes <= 0)
     {
-        fprintf(stderr, "  Sending error.\n");
-        exit(3);
+        error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
     }
-    printf(" %i bytes have been sent to server.\n", bytes);
-    signal(SIGALRM, SignalHandler);
 
+    signal(SIGALRM, SignalHandler);
     alarm(1);
+
     int checkNumValues = 0;
     /************************ Receive data **********************/
     bytes = recvfrom(s, &checkNumValues, sizeof(int), flag, (struct sockaddr *)&server, &server_size);
     if (bytes < 0)
     {
-        fprintf(stderr, " Receiving error.\n");
-        exit(4);
+        error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
     }
     alarm(0);
-    printf(" Server's (%s:%d) acknowledgement:\n  %d\n",
-           inet_ntoa(server.sin_addr), ntohs(server.sin_port), checkNumValues);
     if (checkNumValues != NumValues)
     {
-
-        printf("  The number of values are not equal.\n");
-        exit(5);
+        error_with_exit(8, "Hiba! A fogadott meresi eredmeny nem egyezik a kuldottel!\n");
     }
-    printf(" Array size to send: %d", NumValues);
     bytes = sendto(s, Values, sizeof(int) * NumValues, flag, (struct sockaddr *)&server, server_size);
     if (bytes <= 0)
     {
-        fprintf(stderr, "  Sending array error.\n");
-        exit(3);
+        error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
     }
-    printf(" %i bytes have been sent to server.\n", bytes);
-
     bytes = recvfrom(s, &checkNumValues, sizeof(int), flag, (struct sockaddr *)&server, &server_size);
     if (bytes < 0)
     {
-        fprintf(stderr, " Receiving error.\n");
-        exit(4);
+        error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
     }
-    printf("Got %d values from server\n", checkNumValues);
     if (checkNumValues != NumValues)
     {
-
-        printf("  The number of values are not equal.\n");
-        exit(5);
+        error_with_exit(8, "Hiba! A fogadott meresi eredmeny nem egyezik a kuldottel!\n");
     }
-    /************************ Closing ***************************/
-    return EXIT_SUCCESS;
 }
 
-void ReceiveViaSocket(int sig)
+void ReceiveViaSocket()
 {
+    printf("Fogadas socketen...\n");
     int s;                     // socket descriptor
     int bytes;                 // received/sent bytes
     int err;                   // error code
     int flag;                  // transmission flag
     char on;                   // sockopt option
-    char buffer[BUFSIZE];      // datagram buffer area
     int NumValues;             // number of values
     unsigned int server_size;  // length of the sockaddr_in server
     unsigned int client_size;  // length of the sockaddr_in client
@@ -200,8 +165,7 @@ void ReceiveViaSocket(int sig)
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s < 0)
     {
-        fprintf(stderr, " Socket creation error.\n");
-        exit(2);
+        error_with_exit(5, "Hiba! Nem sikerult letrehozni a socketet!\n");
     }
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
@@ -210,58 +174,46 @@ void ReceiveViaSocket(int sig)
     err = bind(s, (struct sockaddr *)&server, server_size);
     if (err < 0)
     {
-        fprintf(stderr, "Binding error.\n");
-        exit(3);
+        error_with_exit(9, "Hiba! Nem sikerult a socketet hozzarendelni a cimhez!\n");
     }
 
     while (1)
-    { // Continuous server operation
+    {
         /************************ Receive data **********************/
-        printf("\n Waiting for a message...\n");
+        printf("\n Varakozas...\n");
         bytes = recvfrom(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&client, &client_size);
         if (bytes < 0)
         {
-            fprintf(stderr, " Receiving error.\n");
-            exit(4);
+            error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
         }
-        printf(" %d bytes have been received from the client (%s:%d).\n Client's message:  %d\n",
-               bytes, inet_ntoa(client.sin_addr), ntohs(client.sin_port), NumValues);
 
         /************************ Sending data **********************/
         bytes = sendto(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&client, client_size);
         if (bytes <= 0)
         {
-            fprintf(stderr, " Sending error.\n");
-            exit(5);
+            error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
         }
-        printf(" Acknowledgement have been sent to client.\n");
+
         int data_size = NumValues * sizeof(int);
         int *data = (int *)malloc(data_size);
-        printf("\n Waiting for array of data...\n");
+
         bytes = recvfrom(s, data, sizeof(int) * NumValues, flag, (struct sockaddr *)&client, &client_size);
         if (bytes < 0)
         {
-            fprintf(stderr, " Receiving array error.\n");
-            exit(4);
+            error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
         }
-        int receivedNumValues = bytes / sizeof(int);
-        printf(" %d bytes have been received from the client (%s:%d).\n Array got size:\n  %d",
-               bytes, inet_ntoa(client.sin_addr), ntohs(client.sin_port), receivedNumValues);
 
+        int receivedNumValues = bytes / sizeof(int);
         /************************ Sending data **********************/
-        // sprintf(buffer, "I have received a %d bytes long message.", bytes - 1);
         bytes = sendto(s, &receivedNumValues, sizeof(int), flag, (struct sockaddr *)&client, client_size);
         if (bytes <= 0)
         {
-            fprintf(stderr, " Sending error.\n");
-            exit(5);
+            error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
         }
         if (receivedNumValues != NumValues)
         {
-            printf("  The number of values are not equal.\n");
-            exit(5);
+            error_with_exit(8, "Hiba! A fogadott meresi eredmeny nem egyezik a kuldottel!\n");
         }
-        printf(" Acknowledgement about gotten array size have been sent to client.\n");
         BMPcreator(data, NumValues);
         free(data);
     }
@@ -272,15 +224,15 @@ void SignalHandler(int sig)
     switch (sig)
     {
     case SIGINT:
-        printf("Exiting program...\n");
+        printf("Kilepes a programbol...\n");
         exit(0);
     case SIGUSR1:
-        printf("Error: File transfer service not available!\n");
+        printf("Hiba! Fajl kuldes nem lehetseges!\n");
         break;
     case SIGALRM:
-        printf("Error: Server did not respond within timeout!\n");
+        printf("Hiba: Szerver nem elerheto!\n");
         exit(1);
     default:
-        printf("Received unexpected signal: %d\n", sig);
+        printf("Varatlan jel erkezett: %d\n", sig);
     }
 }

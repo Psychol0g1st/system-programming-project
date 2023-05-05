@@ -5,6 +5,7 @@
 
 int Measurement(int **Values)
 {
+    printf("Meresek elkezdese...\n");
     srand(time(NULL));
     time_t now = time(NULL);
     struct tm *local_time = localtime(&now);
@@ -12,8 +13,11 @@ int Measurement(int **Values)
     int minutes = local_time->tm_min;
     int values_count = (minutes * 60 + seconds) % (15 * 60);
     int num_values = max(values_count, 100);
-    // int num_values = 9;
     int *values = malloc(num_values * sizeof(int));
+    if (values == NULL)
+    {
+        error_with_exit(2, "Nem sikerult helyet foglalni a mereseknek!");
+    }
     values[0] = 0;
 
     for (int i = 1; i < num_values; i++)

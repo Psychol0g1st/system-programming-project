@@ -23,7 +23,6 @@ int main(const int argc, const char *argv[])
     signal(SIGUSR1, SignalHandler);
 
     Config *conf = init(argc, argv);
-    print_config(conf);
 
     if (conf->help)
     {
@@ -39,7 +38,6 @@ int main(const int argc, const char *argv[])
         {
             if (conf->communication == FILE_COM || conf->communication == DEFAULT_COM)
             {
-                printf("File communication\n");
                 int *data;
                 int num_values = Measurement(&data);
                 SendViaFile(data, num_values);
@@ -47,7 +45,6 @@ int main(const int argc, const char *argv[])
             }
             else if (conf->communication == SOCKET_COM)
             {
-                printf("Socket communication\n");
                 int *data;
                 int num_values = Measurement(&data);
                 SendViaSocket(data, num_values);
@@ -58,7 +55,6 @@ int main(const int argc, const char *argv[])
         {
             if (conf->communication == FILE_COM || conf->communication == DEFAULT_COM)
             {
-                printf("Receive mode\n");
                 while (1)
                 {
                     signal(SIGUSR1, signal_handler);
@@ -67,7 +63,6 @@ int main(const int argc, const char *argv[])
             }
             else if (conf->communication == SOCKET_COM)
             {
-                printf("Socket communication\n");
                 ReceiveViaSocket();
             }
         }
