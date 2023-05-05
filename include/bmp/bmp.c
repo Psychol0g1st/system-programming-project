@@ -7,7 +7,7 @@
 
 void BMPcreator(int *Values, int NumValues)
 {
-    printf("BMP generalas...\n");
+    printf("BMP generálás...\n");
     int image_size = ((NumValues * 1 + 31) / 32) * 4 * NumValues;
     int row_size = image_size / NumValues;
 
@@ -38,14 +38,12 @@ void BMPcreator(int *Values, int NumValues)
     int f = open("chart.bmp", O_CREAT | O_TRUNC | O_WRONLY, mode);
     if (f < 0)
     {
-        write(2, "File Error!", 11);
-        exit(1);
+        error_with_exit(3, "Hiba! Nem sikerült megnyitni a chart.bmp fájlt!\n");
     }
     unsigned char *image_data = (unsigned char *)calloc(image_size, 1);
     if (image_data == NULL)
     {
-        write(2, "Memory Error!", 13);
-        exit(1);
+        error_with_exit(11, "Hiba! Nem sikerült memóriát foglalni!\n");
     }
 
     int center = NumValues / 2;

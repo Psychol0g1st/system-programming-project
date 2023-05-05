@@ -9,11 +9,11 @@
 
 int FindPID()
 {
-    printf("PID keresese...\n");
+    printf("PID keresése...\n");
     DIR *proc_dir = opendir("/proc");
     if (proc_dir == NULL)
     {
-        error_with_exit(10, "Hiba! Nem sikerult megnyitni a /proc konyvtarat!\n");
+        error_with_exit(10, "Hiba! Nem sikerült megnyítni a /proc könyvtárat!\n");
     }
 
     struct dirent *entry;

@@ -17,7 +17,7 @@
 
 void SendViaFile(int *Values, int NumValues)
 {
-    printf("Kuldes fajlba...\n");
+    printf("Küldés fájlba...\n");
     struct passwd *pw = getpwuid(getuid());                  // get user's information
     const char *homedir = pw->pw_dir;                        // get user's home directory
     char file_path[256];                                     // create a buffer for file path
@@ -25,7 +25,7 @@ void SendViaFile(int *Values, int NumValues)
     FILE *file = fopen(file_path, "w");                      // open file for writing
     if (file == NULL)
     {
-        error_with_exit(3, "Hiba! Nem sikerult megnyitni a Measurement.txt fajlt!\n");
+        error_with_exit(3, "Hiba! Nem sikerült megnyitni a Measurement.txt fájlt!\n");
     }
 
     for (int i = 0; i < NumValues; i++)
@@ -38,7 +38,7 @@ void SendViaFile(int *Values, int NumValues)
     int pid = FindPID();
     if (pid == -1)
     {
-        error_with_exit(11, "Hiba! Nem talalhato a chart process!");
+        error_with_exit(11, "Hiba! Nem található a Chart processz!");
     }
     else
     {
@@ -48,7 +48,7 @@ void SendViaFile(int *Values, int NumValues)
 
 void ReceiveViaFile()
 {
-    printf("Fogadas fajlbol...\n");
+    printf("Fogadás fájlból...\n");
     struct passwd *pw = getpwuid(getuid());                  // get user's information
     const char *homedir = pw->pw_dir;                        // get user's home directory
     char file_path[256];                                     // create a buffer for file path
@@ -56,7 +56,7 @@ void ReceiveViaFile()
     FILE *file = fopen(file_path, "r");                      // open file for writing
     if (file == NULL)
     {
-        error_with_exit(3, "Hiba! Nem sikerult megnyitni a Measurement.txt fajlt!\n");
+        error_with_exit(3, "Hiba! Nem sikerült megnyitni a Measurement.txt fájlt!\n");
     }
 
     int *values = malloc(MAX_VALUES * sizeof(int));
@@ -75,7 +75,7 @@ void ReceiveViaFile()
 
 void SendViaSocket(int *Values, int NumValues)
 {
-    printf("Kuldes socketen...\n");
+    printf("Küldés socketen...\n");
     int s;                     // socket ID
     int bytes;                 // received/sent bytes
     int flag;                  // transmission flag
@@ -95,7 +95,7 @@ void SendViaSocket(int *Values, int NumValues)
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s < 0)
     {
-        error_with_exit(5, "Hiba! Nem sikerult letrehozni a socketet!\n");
+        error_with_exit(5, "Hiba! Nem sikerült létrehozni a socketet!\n");
     }
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
@@ -104,7 +104,7 @@ void SendViaSocket(int *Values, int NumValues)
     bytes = sendto(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&server, server_size);
     if (bytes <= 0)
     {
-        error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
+        error_with_exit(6, "Hiba! Nem sikerült elküldeni a mérési eredményt socketen!\n");
     }
 
     signal(SIGALRM, SignalHandler);
@@ -115,32 +115,32 @@ void SendViaSocket(int *Values, int NumValues)
     bytes = recvfrom(s, &checkNumValues, sizeof(int), flag, (struct sockaddr *)&server, &server_size);
     if (bytes < 0)
     {
-        error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
+        error_with_exit(7, "Hiba! Nem sikerült fogadni a mérési eredményt socketen!\n");
     }
     alarm(0);
     if (checkNumValues != NumValues)
     {
-        error_with_exit(8, "Hiba! A fogadott meresi eredmeny nem egyezik a kuldottel!\n");
+        error_with_exit(8, "Hiba! A fogadott mérési eredmény nem egyezik a küldöttel!\n");
     }
     bytes = sendto(s, Values, sizeof(int) * NumValues, flag, (struct sockaddr *)&server, server_size);
     if (bytes <= 0)
     {
-        error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
+        error_with_exit(6, "Hiba! Nem sikerült elküldeni a mérési eredményt socketen!\n");
     }
     bytes = recvfrom(s, &checkNumValues, sizeof(int), flag, (struct sockaddr *)&server, &server_size);
     if (bytes < 0)
     {
-        error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
+        error_with_exit(7, "Hiba! Nem sikerült fogadni a mérési eredményt socketen!\n");
     }
     if (checkNumValues != NumValues)
     {
-        error_with_exit(8, "Hiba! A fogadott meresi eredmeny nem egyezik a kuldottel!\n");
+        error_with_exit(8, "Hiba! A fogadott mérési eredmény nem egyezik a küldöttel!\n");
     }
 }
 
 void ReceiveViaSocket()
 {
-    printf("Fogadas socketen...\n");
+    printf("Fogadás socketen...\n");
     int s;                     // socket descriptor
     int bytes;                 // received/sent bytes
     int err;                   // error code
@@ -165,7 +165,7 @@ void ReceiveViaSocket()
     s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s < 0)
     {
-        error_with_exit(5, "Hiba! Nem sikerult letrehozni a socketet!\n");
+        error_with_exit(5, "Hiba! Nem sikerült létrehozni a socketet!\n");
     }
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof on);
@@ -174,7 +174,7 @@ void ReceiveViaSocket()
     err = bind(s, (struct sockaddr *)&server, server_size);
     if (err < 0)
     {
-        error_with_exit(9, "Hiba! Nem sikerult a socketet hozzarendelni a cimhez!\n");
+        error_with_exit(9, "Hiba! Nem sikerült a socketet hozzárendelni a címhez!\n");
     }
 
     while (1)
@@ -184,14 +184,14 @@ void ReceiveViaSocket()
         bytes = recvfrom(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&client, &client_size);
         if (bytes < 0)
         {
-            error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
+            error_with_exit(7, "Hiba! Nem sikerült fogadni a mérési eredményt socketen!\n");
         }
 
         /************************ Sending data **********************/
         bytes = sendto(s, &NumValues, sizeof(NumValues), flag, (struct sockaddr *)&client, client_size);
         if (bytes <= 0)
         {
-            error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
+            error_with_exit(6, "Hiba! Nem sikerült elküldeni a mérési eredményt socketen!\n");
         }
 
         int data_size = NumValues * sizeof(int);
@@ -200,7 +200,7 @@ void ReceiveViaSocket()
         bytes = recvfrom(s, data, sizeof(int) * NumValues, flag, (struct sockaddr *)&client, &client_size);
         if (bytes < 0)
         {
-            error_with_exit(7, "Hiba! Nem sikerult fogadni a meresi eredmenyt socketen!\n");
+            error_with_exit(7, "Hiba! Nem sikerült fogadni a mérési eredményt socketen!\n");
         }
 
         int receivedNumValues = bytes / sizeof(int);
@@ -208,11 +208,11 @@ void ReceiveViaSocket()
         bytes = sendto(s, &receivedNumValues, sizeof(int), flag, (struct sockaddr *)&client, client_size);
         if (bytes <= 0)
         {
-            error_with_exit(6, "Hiba! Nem sikerult elkuldeni a meresi eredmenyt socketen!\n");
+            error_with_exit(6, "Hiba! Nem sikerült elküldeni a mérési eredményt socketen!\n");
         }
         if (receivedNumValues != NumValues)
         {
-            error_with_exit(8, "Hiba! A fogadott meresi eredmeny nem egyezik a kuldottel!\n");
+            error_with_exit(8, "Hiba! A fogadott mérési eredmény nem egyezik a küldöttel!\n");
         }
         BMPcreator(data, NumValues);
         free(data);
@@ -224,15 +224,13 @@ void SignalHandler(int sig)
     switch (sig)
     {
     case SIGINT:
-        printf("Kilepes a programbol...\n");
-        exit(0);
+        error_with_exit(0, "Kilépés a programból...\n");
     case SIGUSR1:
-        printf("Hiba! Fajl kuldes nem lehetseges!\n");
+        printf("Hiba! Fájl küldés nem lehetséges!\n");
         break;
     case SIGALRM:
-        printf("Hiba: Szerver nem elerheto!\n");
-        exit(1);
+        error_with_exit(12, "Hiba! Szerver nem válaszol!\n");
     default:
-        printf("Varatlan jel erkezett: %d\n", sig);
+        printf("Váratlen szignál érkezett!: %d\n", sig);
     }
 }
