@@ -27,7 +27,7 @@ void version()
         }
 #pragma omp section
         {
-            printf("Version: 0.0.1\n");
+            printf("Version: 0.1.0\n2023.05.01\n\n");
         }
 #pragma omp section
         {

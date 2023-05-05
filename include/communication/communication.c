@@ -229,7 +229,7 @@ void SignalHandler(int sig)
         printf("Hiba! Fájl küldés nem lehetséges!\n");
         break;
     case SIGALRM:
-        error_with_exit(12, "Hiba! Szerver nem válaszol!\n");
+        error_with_exit(4, "Hiba! Szerver nem válaszol!\n");
     default:
         printf("Váratlen szignál érkezett!: %d\n", sig);
     }
