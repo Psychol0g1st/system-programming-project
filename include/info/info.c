@@ -1,5 +1,6 @@
 #include "info.h"
 #include <stdio.h>
+#include <omp.h>
 #include <stdlib.h>
 
 void help()
@@ -18,7 +19,19 @@ void help()
 
 void version()
 {
-    printf("\nRendszerközeli programozás\n\n");
-    printf("Version: 0.1.0\n");
-    printf("Fejlesztette: Svec Antal\n");
+#pragma omp parallel sections
+    {
+#pragma omp section
+        {
+            printf("System programming project\n\n");
+        }
+#pragma omp section
+        {
+            printf("Version: 0.0.1\n");
+        }
+#pragma omp section
+        {
+            printf("Created by: Antal Svec\n");
+        }
+    }
 }
