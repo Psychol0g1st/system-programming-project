@@ -1,6 +1,7 @@
 #include "data.h"
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
 #include "../helper/helper.h"
 
 int Measurement(int **Values)

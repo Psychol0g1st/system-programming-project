@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-
+#include "../helper/helper.h"
 void BMPcreator(int *Values, int NumValues)
 {
     printf("BMP generálás...\n");

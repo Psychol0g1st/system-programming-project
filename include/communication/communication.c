@@ -225,12 +225,15 @@ void SignalHandler(int sig)
     {
     case SIGINT:
         error_with_exit(0, "Kilépés a programból...\n");
+        break;
     case SIGUSR1:
         printf("Hiba! Fájl küldés nem lehetséges!\n");
         break;
     case SIGALRM:
         error_with_exit(4, "Hiba! Szerver nem válaszol!\n");
+        break;
     default:
         printf("Váratlen szignál érkezett!: %d\n", sig);
+        break;
     }
 }
