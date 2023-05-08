@@ -9,12 +9,12 @@ void help()
     printf("Futtatás: ./chart [PARAMÉTEREK]\n\n");
     printf("Paraméterek:\n");
     printf("--help\tEzt a sugót megjeleníti.\n");
-    printf("-send\t Küldési mód. Alapértelmezetten fájl segítségével.");
-    printf("-send -file\t Küldési mód fájlon keresztül.");
-    printf("-send -socket\t Küldési mód socketen keresztül.");
-    printf("-receive\t Fogadási mód. Alapértelmezetten fájlon keresztül.");
-    printf("-receive -file\t Fogadási mód fájlon keresztül.");
-    printf("-receive -socket\t Fogadási mód socketen keresztül.");
+    printf("-send\t Küldési mód. Alapértelmezetten fájl segítségével.\n");
+    printf("-send -file\t Küldési mód fájlon keresztül.\n");
+    printf("-send -socket\t Küldési mód socketen keresztül.\n");
+    printf("-receive\t Fogadási mód. Alapértelmezetten fájlon keresztül.\n");
+    printf("-receive -file\t Fogadási mód fájlon keresztül.\n");
+    printf("-receive -socket\t Fogadási mód socketen keresztül.\n");
 }
 
 void version()
