@@ -49,11 +49,12 @@ void SendViaFile(int *Values, int NumValues)
 void ReceiveViaFile()
 {
     printf("Fogadás fájlból...\n");
-    struct passwd *pw = getpwuid(getuid());                  // get user's information
-    const char *homedir = pw->pw_dir;                        // get user's home directory
-    char file_path[256];                                     // create a buffer for file path
+    struct passwd *pw = getpwuid(getuid()); // get user's information
+    const char *homedir = pw->pw_dir;       // get user's home directory
+    char file_path[256];
+
     sprintf(file_path, "%s/%s", homedir, "Measurement.txt"); // build file path
-    FILE *file = fopen(file_path, "r");                      // open file for writing
+    FILE *file = fopen(file_path, "r");
     if (file == NULL)
     {
         error_with_exit(3, "Hiba! Nem sikerült megnyitni a Measurement.txt fájlt!\n");

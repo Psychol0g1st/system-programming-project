@@ -8,8 +8,8 @@
 void BMPcreator(int *Values, int NumValues)
 {
     printf("BMP generálás...\n");
-    int image_size = ((NumValues * 1 + 31) / 32) * 4 * NumValues;
-    int row_size = image_size / NumValues;
+    int image_size = ((NumValues + 31) / 32) * 4 * NumValues;
+    int row_size = ((NumValues + 31) / 32) * 4;
 
     BitmapHeader header;
     DIBHeader dib_header;
@@ -19,7 +19,7 @@ void BMPcreator(int *Values, int NumValues)
     header.signature[1] = 'M';
     header.file_size = sizeof(header) + sizeof(dib_header) + sizeof(palette) + image_size;
     header.unused = 0;
-    header.pixel_array_offset = sizeof(header) + sizeof(dib_header);
+    header.pixel_array_offset = sizeof(header) + sizeof(dib_header) + sizeof(palette);
     dib_header.header_size = sizeof(dib_header);
     dib_header.width = NumValues;
     dib_header.height = NumValues;
@@ -29,10 +29,10 @@ void BMPcreator(int *Values, int NumValues)
     dib_header.image_size = image_size;
     dib_header.x_resolution = 0;
     dib_header.y_resolution = 0;
-    dib_header.colors = 2;
-    dib_header.used_colors = 2;
-    palette.color1 = 0x000000;
-    palette.color0 = 0xFFFFFF;
+    dib_header.colors = 0;
+    dib_header.used_colors = 0;
+    palette.color1 = 0xFF0000;
+    palette.color0 = 0x00FF00;
 
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
     int f = open("chart.bmp", O_CREAT | O_TRUNC | O_WRONLY, mode);
